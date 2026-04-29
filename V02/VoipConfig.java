@@ -18,25 +18,25 @@ public final class VoipConfig {
     public static final int FRAME_MS = 32;
 
     //Playout buffer size
-    public static final int MAX_BUFFER_FRAMES = 50;
+    public static final int MAX_BUFFER_FRAMES = 80;
 
     //Skip threshold in frames
-    public static final int SKIP_AHEAD_THRESHOLD = 6;
+    public static final int SKIP_AHEAD_THRESHOLD = 10;
 
     //Startup buffer size in frames
-    public static final int STARTUP_BUFFER_FRAMES = 5;
+    public static final int STARTUP_BUFFER_FRAMES = 10;
 
     //Buffer resync threshold in frames
-    public static final int RESYNC_THRESHOLD = 10;
+    public static final int RESYNC_THRESHOLD = 20;
 
     // Default port for receiver bind and sender destination
     public static final int DEFAULT_PORT = 55555;
 
     // Default peer IP address (localhost) and port
-    public static final String PEER_IP = "10.10.4.5";
+    public static final String PEER_IP = "10.10.4.143";
 
     // Chosen socket type
-    public static final int SOCKET_TYPE = 3;
+    public static final int SOCKET_TYPE = 1;
 
     // Socket timeout in milliseconds (for receiver)
     public static final int SOCKET_TIMEOUT = 500;

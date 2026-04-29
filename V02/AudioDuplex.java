@@ -11,10 +11,10 @@ public class AudioDuplex {
     
     public static void main (String[] args){
         
-        AudioReceiverThread receiver = new AudioReceiverThread();
+        //AudioReceiverThread receiver = new AudioReceiverThread();
         AudioSenderThread sender = new AudioSenderThread();
         
-        receiver.start();
+        //receiver.start();
         sender.start();
         
     }

@@ -28,6 +28,8 @@ public class AudioReceiverThread implements Runnable {
     private int lostPackets = 0;
     private int duplicatePackets = 0;
     private int lateDiscards = 0;
+    private long playoutLateEvents = 0;
+    private long maxPlayoutLateMs = 0;
     //private int outOfOrderPackets = 0;
     
     private long previousDelay = -1;
@@ -146,7 +148,7 @@ public class AudioReceiverThread implements Runnable {
             playoutBuffer.put(seq, audioBlock);
 
             while(playoutBuffer.size() > VoipConfig.MAX_BUFFER_FRAMES) {
-                playoutBuffer.pollFirstEntry();
+                playoutBuffer.pollLastEntry();
             }
         }
     }
@@ -177,10 +179,22 @@ public class AudioReceiverThread implements Runnable {
             }
         }
 
+        long frameNs = VoipConfig.FRAME_MS * 1_000_000L;
         long nextPlayTime = System.nanoTime();
 
-        while(playerRunning) {
-            nextPlayTime += VoipConfig.FRAME_MS * 1_000_000L;
+        while (playerRunning) {
+
+            long sleepNs = nextPlayTime - System.nanoTime();
+            if (sleepNs > 0) {
+                sleepNanos(sleepNs);
+            } else {
+                long lateMs = (-sleepNs) / 1_000_000L;
+                if (lateMs > 2) {
+                    playoutLateEvents++;
+                    maxPlayoutLateMs = Math.max(maxPlayoutLateMs, lateMs);
+                }
+            }
+
 
             byte[] frame = bufferGet(playoutSeq);
             if(frame != null) {
@@ -272,14 +286,7 @@ public class AudioReceiverThread implements Runnable {
             }
 
             playoutSeq++;
-
-            long now = System.nanoTime();
-            long sleepNs = nextPlayTime - now;
-            if (sleepNs > 0) {
-                sleepNanos(sleepNs);
-            } else {
-                nextPlayTime = now;
-            }
+            nextPlayTime += frameNs;
             
         }
     }
@@ -298,11 +305,11 @@ public class AudioReceiverThread implements Runnable {
 
     double soundVolume;
 
-    if (streak == 1) soundVolume = 1.0;
-    else if (streak == 2) soundVolume = 0.85;
-    else if (streak == 3) soundVolume = 0.70;
-    else if (streak == 4) soundVolume = 0.55;
-    else if (streak == 5) soundVolume = 0.40;
+    if (streak == 1) soundVolume = 0.75;
+    else if (streak == 2) soundVolume = 0.45;
+    else if (streak == 3) soundVolume = 0.30;
+    else if (streak == 4) soundVolume = 0.15;
+    else if (streak == 5) soundVolume = 0.10;
     else soundVolume = 0.0;
 
     byte[] outputFrame = new byte[frame.length];
@@ -371,6 +378,7 @@ public class AudioReceiverThread implements Runnable {
         }
 
         Thread playerThread = new Thread(() -> playerLoop(player));
+        playerThread.setPriority(Thread.MAX_PRIORITY);
         playerThread.setDaemon(true);
         playerThread.start();
 
@@ -449,6 +457,8 @@ public class AudioReceiverThread implements Runnable {
                         System.out.println("Packets received: " + receivedPackets);
                         System.out.println("Lost: " + lostPackets);
                         System.out.println("Late discards: " + lateDiscards);
+                        System.out.println("Playout late events: " + playoutLateEvents);
+                        System.out.println("Max playout late ms: " + maxPlayoutLateMs);
                         System.out.println("Duplicates: " + duplicatePackets);
                         System.out.println("Avg Jitter: " + (totalJitter / (receivedPackets - 1)) + " ms");
                         System.out.println("Buffer frames: " + bufferSize());
